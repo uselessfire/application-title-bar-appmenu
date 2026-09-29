@@ -69,9 +69,10 @@ and install it:
 sudo pacman -U plasma6-applets-application-title-bar-appmenu-*-x86_64.pkg.tar.zst
 ```
 
-Or build it with `makepkg -si` from the `PKGBUILD` of a release, which has the checksum of the
-released sources. The copy in [`packaging/arch`](packaging/arch/PKGBUILD) skips the checksum,
-since it cannot know the one of its own release.
+To build the package yourself, use the `PKGBUILD` and the `.install` file attached to the release:
+the release workflow fills in the checksum of the released sources there. Put them in an empty
+directory and run `makepkg -si`. The copy in [`packaging/arch`](packaging/arch/PKGBUILD) has
+`SKIP` instead of the checksum, since it cannot know the checksum of its own release.
 
 ### From the sources
 
