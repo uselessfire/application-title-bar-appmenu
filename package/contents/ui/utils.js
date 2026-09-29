@@ -9,6 +9,10 @@ function isX11() {
     return isX11Plugin;
 }
 
+function isWayland() {
+    return Qt.platform.pluginName.startsWith("wayland");
+}
+
 function copyLayoutConstraint(from, to) {
     Object.assign(to.Layout, {
         "alignment": Qt.binding(function () { return from.Layout.alignment }),
@@ -114,6 +118,21 @@ function widgetElementModelFromName(name) {
             return {
                 "type": WidgetElement.Type.Spacer
             };
+        case "appMenuBar":
+            return {
+                "type": WidgetElement.Type.AppMenuBar
+            };
+    }
+}
+
+// Whether the compiled application menu module is installed.
+function appMenuModuleAvailable(parent) {
+    try {
+        const probe = Qt.createQmlObject("import QtQml\nimport com.github.uselessfire.applicationtitlebar.appmenu\nQtObject {}", parent, "appMenuModuleProbe");
+        probe.destroy();
+        return true;
+    } catch (error) {
+        return false;
     }
 }
 

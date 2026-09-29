@@ -4,16 +4,24 @@
             {
                 "Email": "publicantroids@gmail.com",
                 "Name": "Anton Kharuzhy"
+            },
+            {
+                "Name": "darkbroodzed",
+                "Website": "https://github.com/darkbroodzed"
+            },
+            {
+                "Email": "uselessfire@gmail.com",
+                "Name": "uselessfire"
             }
         ],
         "Category": "Windows and Tasks",
-        "Description": "A widget with buttons to control active task",
+        "Description": "Window title, window buttons and the application menu of the active window",
         "Icon": "window-close",
-        "Id": "com.github.antroids.application-title-bar",
-        "Name": "Application Title Bar",
+        "Id": "com.github.uselessfire.application-title-bar-appmenu",
+        "Name": "Application Title Bar with App Menu",
         "License": "GPL-3.0+",
-        "Version": "0.10.0",
-        "Website": "https://github.com/antroids/application-title-bar",
+        "Version": "0.10.0.1",
+        "Website": "https://github.com/uselessfire/application-title-bar-appmenu",
         "FormFactors": [
             "desktop"
         ]

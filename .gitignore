@@ -4,3 +4,4 @@ application-title-bar.code-workspace
 .idea/misc.xml
 .idea/modules.xml
 .idea/vcs.xml
+/build/

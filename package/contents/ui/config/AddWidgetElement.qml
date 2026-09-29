@@ -66,5 +66,10 @@ ComboBox {
             name: "Spacer"
             value: "spacer"
         }
+
+        ListElement {
+            name: "Application menu bar"
+            value: "appMenuBar"
+        }
     }
 }

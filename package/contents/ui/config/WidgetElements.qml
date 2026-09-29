@@ -90,6 +90,8 @@ RowLayout {
                             return windowIcon;
                         case WidgetElement.Type.Spacer:
                             return spacerIcon;
+                        case WidgetElement.Type.AppMenuBar:
+                            return appMenuBarIcon;
                         }
                     }
                 }
@@ -148,6 +150,18 @@ RowLayout {
                     source: "adjustcol"
                     height: widgetElements.iconSize
                     width: widgetElements.iconSize / 2
+                }
+            }
+
+            Component {
+                id: appMenuBarIcon
+
+                Kirigami.Icon {
+                    property var modelData
+
+                    source: "application-menu"
+                    height: widgetElements.iconSize
+                    width: widgetElements.iconSize
                 }
             }
         }

@@ -14,11 +14,13 @@ PlasmaCore.ToolTipArea {
         Always
     }
 
-    active: showToolTip()
+    active: showToolTip() && !suppressed
     mainText: tasksModel.activeWindow.genericAppName || ""
     icon: tasksModel.activeWindow.icon
 
     property TaskManager.TasksModel tasksModel
+    // Set while the application menu is in use, the tooltip would cover it.
+    property bool suppressed: false
 
     function showToolTip() {
         switch (plasmoid.configuration.widgetToolTipMode) {

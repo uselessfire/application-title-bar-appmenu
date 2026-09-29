@@ -48,6 +48,8 @@ QtObject {
     property var genericAppName
     property var decoration
     property var icon
+    property string appMenuServiceName: ""
+    property string appMenuObjectPath: ""
 
     signal actionCall(int action)
 

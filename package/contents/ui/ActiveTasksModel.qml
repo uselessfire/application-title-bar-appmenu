@@ -122,6 +122,8 @@ TaskManager.TasksModel {
             genericAppName = tasksModel.data(activeTaskIndex, TaskManager.AbstractTasksModel.GenericAppName);
             decoration = tasksModel.data(activeTaskIndex, TaskManager.AbstractTasksModel.Decoration);
             icon = tasksModel.data(activeTaskIndex, Qt.DecorationRole);
+            appMenuServiceName = tasksModel.data(activeTaskIndex, TaskManager.AbstractTasksModel.ApplicationMenuServiceName) || "";
+            appMenuObjectPath = tasksModel.data(activeTaskIndex, TaskManager.AbstractTasksModel.ApplicationMenuObjectPath) || "";
             tasksModel.activeWindowUpdated();
         }
 

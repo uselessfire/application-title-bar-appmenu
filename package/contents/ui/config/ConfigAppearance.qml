@@ -6,15 +6,53 @@
 
 import "../"
 import "../config"
+import "../utils.js" as Utils
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.workspace.dbus as DBus
 
 KCM.SimpleKCM {
     id: page
+
+    readonly property string appMenuInstallationUrl: "https://github.com/uselessfire/application-title-bar-appmenu#installation"
+    readonly property bool appMenuModuleAvailable: Utils.appMenuModuleAvailable(page)
+    readonly property bool appMenuInUse: cfg_widgetElements.includes("appMenuBar") || (cfg_overrideElementsMaximized && cfg_widgetElementsMaximized.includes("appMenuBar"))
+    // The "appmenu" module of kded makes applications export their menus.
+    property bool appMenuServiceLoaded: true
+    property bool appMenuServiceAutoloaded: true
+
+    function kdedCall(member, signature, args, onValue) {
+        const reply = DBus.SessionBus.asyncCall({
+            "service": "org.kde.kded6",
+            "path": "/kded",
+            "iface": "org.kde.kded6",
+            "member": member,
+            "signature": signature,
+            "arguments": args
+        });
+        reply.finished.connect(() => {
+            if (!reply.isError && onValue) {
+                onValue(reply.value);
+            }
+            reply.destroy();
+        });
+    }
+
+    function checkAppMenuService() {
+        kdedCall("loadedModules", "()", [], value => appMenuServiceLoaded = Array.from(value).includes("appmenu"));
+        kdedCall("isModuleAutoloaded", "(s)", ["appmenu"], value => appMenuServiceAutoloaded = value);
+    }
+
+    function enableAppMenuService() {
+        kdedCall("setModuleAutoloading", "(sb)", ["appmenu", true], null);
+        kdedCall("loadModule", "(s)", ["appmenu"], () => checkAppMenuService());
+    }
+
+    Component.onCompleted: checkAppMenuService()
 
     property alias cfg_widgetButtonsIconsTheme: widgetButtonsIconsTheme.currentIndex
     property string cfg_widgetButtonsAuroraeTheme
@@ -46,6 +84,8 @@ KCM.SimpleKCM {
     property alias cfg_overrideElementsMaximized: overrideElementsMaximized.checked
     property alias cfg_widgetElementsMaximized: widgetElementsMaximized.elements
     property alias cfg_windowTitleSourceMaximized: windowTitleSourceMaximized.currentIndex
+    property alias cfg_appMenuRevealOnHover: appMenuRevealOnHover.checked
+    property alias cfg_appMenuSearchEnabled: appMenuSearchEnabled.checked
 
     Kirigami.FormLayout {
         anchors.left: parent.left
@@ -408,6 +448,54 @@ You can install more of regular Aurorae themes for window decorations in System 
                 from: 0
                 to: 64
             }
+        }
+
+        Kirigami.Separator {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("Application Menu")
+        }
+
+        Kirigami.InlineMessage {
+            Layout.fillWidth: true
+            type: Kirigami.MessageType.Warning
+            visible: !page.appMenuModuleAvailable
+            text: i18n("The \"Application menu bar\" element needs a compiled module, which is not installed, so it stays empty. On Arch Linux, install the package from the Releases page or build it with packaging/arch/PKGBUILD. On other distributions, build and install the project with CMake. See the <a href=\"%1\">installation guide</a>.", page.appMenuInstallationUrl)
+            onLinkActivated: link => Qt.openUrlExternally(link)
+            actions: [
+                Kirigami.Action {
+                    icon.name: "help-contents"
+                    text: i18n("Open Installation Guide")
+                    onTriggered: Qt.openUrlExternally(page.appMenuInstallationUrl)
+                }
+            ]
+        }
+
+        Kirigami.InlineMessage {
+            Layout.fillWidth: true
+            type: Kirigami.MessageType.Warning
+            visible: page.appMenuModuleAvailable && page.appMenuInUse && (!page.appMenuServiceLoaded || !page.appMenuServiceAutoloaded)
+            text: i18n("The \"Application menus\" background service of Plasma is disabled, so applications show their own menu bars instead of exporting them. Applications that are already running have to be restarted after enabling it.")
+            actions: [
+                Kirigami.Action {
+                    icon.name: "system-run"
+                    text: i18n("Enable the Service")
+                    onTriggered: page.enableAppMenuService()
+                }
+            ]
+        }
+
+        CheckBox {
+            id: appMenuRevealOnHover
+
+            Kirigami.FormData.label: i18n("Show menu:")
+            text: i18n("In place of the title, while the widget is hovered")
+        }
+
+        CheckBox {
+            id: appMenuSearchEnabled
+
+            text: i18n("Add a search entry (Wayland only)")
+            enabled: Utils.isWayland()
         }
 
         Kirigami.Separator {
