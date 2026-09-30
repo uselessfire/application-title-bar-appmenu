@@ -40,3 +40,10 @@ target_link_libraries(pluginloadtest PRIVATE Qt::Test Qt::Qml Qt::Widgets)
 add_dependencies(pluginloadtest atbappmenuplugin)
 add_test(NAME pluginloadtest COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- $<TARGET_FILE:pluginloadtest>)
 set_tests_properties(pluginloadtest PROPERTIES ENVIRONMENT "${atb_test_environment}")
+
+# Black box: the menu button of the widget, loaded from the package directory.
+add_executable(menubuttontest menubuttontest.cpp)
+target_compile_definitions(menubuttontest PRIVATE ATB_MENU_BUTTON_SCENE="${CMAKE_CURRENT_SOURCE_DIR}/menubuttonscene.qml")
+target_link_libraries(menubuttontest PRIVATE Qt::Test Qt::Qml Qt::Quick KF6::I18n KF6::I18nQml)
+add_test(NAME menubuttontest COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- $<TARGET_FILE:menubuttontest>)
+set_tests_properties(menubuttontest PROPERTIES ENVIRONMENT "${atb_test_environment}")

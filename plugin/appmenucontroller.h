@@ -83,12 +83,14 @@ protected:
 
 private:
     enum class Activation {
-        Explicit, // pressed, or requested by the application
+        Explicit, // clicked, or requested by the application
         Switch, // moving between menus with the pointer or the arrow keys
     };
 
     void openMenu(QQuickItem *button, int index, Activation activation);
+    void focusLeadingWidget();
     void watchSubmenus(QMenu *menu);
+    int switchStep(int key) const;
     int neighbourIndex(int step) const;
     QQuickItem *buttonForIndex(int index) const;
     QPoint popupPosition(QQuickItem *button) const;

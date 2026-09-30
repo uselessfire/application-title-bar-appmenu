@@ -12,6 +12,8 @@ WheelHandler {
     property int horizontalRotation: 0
     property bool firstHorizontalEvent: true
     property bool firstVerticalEvent: true
+    // Whether the widget lets the wheel act on the window right now
+    property bool allowed: true
     property int firstEventDistance: cfg.widgetMouseAreaWheelFirstEventDistance
     property int nextEventDistance: cfg.widgetMouseAreaWheelNextEventDistance
 
@@ -21,7 +23,7 @@ WheelHandler {
     signal wheelLeft
     signal wheelRight
 
-    enabled: cfg.widgetMouseAreaWheelEnabled
+    enabled: cfg.widgetMouseAreaWheelEnabled && allowed
     target: null
     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     onActiveChanged: function () {

@@ -96,6 +96,9 @@ Q_SIGNALS:
     /// deleted. Anything that still shows them has to let go of them now.
     void menuAboutToBeDestroyed();
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void setMenuAvailable(bool available);
     void scheduleReset();

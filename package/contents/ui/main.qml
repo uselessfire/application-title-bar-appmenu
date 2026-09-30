@@ -527,8 +527,10 @@ PlasmoidItem {
         Layout.preferredHeight: root.vertical ? widgetRow.Layout.preferredWidth : widgetRow.Layout.preferredHeight
 
         MouseHandlers {
-            // Clicks, drags and the wheel over the menu bar belong to the menus.
-            enabled: !root.appMenuActive
+            // An open menu has the pointer. Over the menu bar, clicks and the wheel belong
+            // to the menus, while a press there can still drag the window: menus open on click.
+            dragEnabled: !root.appMenuOpen
+            clicksEnabled: !root.appMenuActive
             Component.onCompleted: {
                 invokeKWinShortcut.connect(root.invokeKWinShortcut);
             }

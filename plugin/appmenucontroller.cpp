@@ -15,12 +15,14 @@
 #include <QDBusConnectionInterface>
 #include <QGuiApplication>
 #include <QKeyEvent>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QTimer>
+#include <QWidgetAction>
 
 namespace
 {
@@ -213,15 +215,6 @@ void AtbAppMenuController::openMenu(QQuickItem *button, int index, Activation ac
     qCDebug(ATB_APPMENU) << "Opening entry" << index << (activation == Activation::Explicit ? "explicitly" : "by switching") << "instead of"
                          << m_currentIndex;
 
-    // Workaround for QTBUG-59044: when a window that does not accept focus opens a
-    // popup that grabs the pointer while a button is pressed, Qt does not see the
-    // release and the next click is lost. Release the QML grab manually.
-    QTimer::singleShot(0, button, [button] {
-        if (QQuickWindow *window = button->window(); window && window->mouseGrabberItem()) {
-            window->mouseGrabberItem()->ungrabMouse();
-        }
-    });
-
     if (m_sourceAction != action) {
         restoreSourceMenu();
         m_sourceAction = action;
@@ -256,8 +249,44 @@ void AtbAppMenuController::openMenu(QQuickItem *button, int index, Activation ac
         const QPoint shift = m_proxyMenu->pos() - position;
         m_styleOffset = shift.manhattanLength() <= MaxStyleOffset ? shift : QPoint();
     }
+    focusLeadingWidget();
 
     setCurrentIndex(index);
+}
+
+void AtbAppMenuController::focusLeadingWidget()
+{
+    // The search entry starts with its field: typing goes there right away. QMenu itself
+    // only focuses such a widget when it is reached with the arrow keys.
+    const auto actions = m_proxyMenu->actions();
+    auto *widgetAction = actions.isEmpty() ? nullptr : qobject_cast<QWidgetAction *>(actions.constFirst());
+    QWidget *widget = widgetAction ? widgetAction->defaultWidget() : nullptr;
+    if (!widget || widget->parentWidget() != m_proxyMenu.get() || widget->focusPolicy() == Qt::NoFocus) {
+        return;
+    }
+    // The arrow keys then go on from the field to the results.
+    m_proxyMenu->setActiveAction(widgetAction);
+    widget->setFocus(Qt::PopupFocusReason);
+    if (auto *field = qobject_cast<QLineEdit *>(widget)) {
+        // Typing replaces the last query, whose results are shown meanwhile.
+        field->selectAll();
+        // Left and Right at the ends of the text switch menus, see eventFilter().
+        field->installEventFilter(this);
+    }
+}
+
+int AtbAppMenuController::switchStep(int key) const
+{
+    // Left goes to the previous menu and Right to the next one, the other way round in a
+    // right-to-left layout.
+    const bool rightToLeft = m_proxyMenu->layoutDirection() == Qt::RightToLeft;
+    if (key == (rightToLeft ? Qt::Key_Right : Qt::Key_Left)) {
+        return -1;
+    }
+    if (key == (rightToLeft ? Qt::Key_Left : Qt::Key_Right)) {
+        return 1;
+    }
+    return 0;
 }
 
 void AtbAppMenuController::closeMenu()
@@ -478,6 +507,24 @@ void AtbAppMenuController::watchSubmenus(QMenu *menu)
 
 bool AtbAppMenuController::eventFilter(QObject *watched, QEvent *event)
 {
+    if (auto *field = qobject_cast<QLineEdit *>(watched)) {
+        // The field of the search entry takes the arrow keys to move its cursor. At the
+        // ends of the text they switch menus like in any other menu.
+        if (event->type() != QEvent::KeyPress || !m_proxyMenu || field->parentWidget() != m_proxyMenu.get() || field->hasSelectedText()) {
+            return false;
+        }
+        const auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if ((keyEvent->modifiers() & ~Qt::KeypadModifier) != Qt::NoModifier) {
+            return false;
+        }
+        const int step = switchStep(keyEvent->key());
+        if ((step < 0 && field->cursorPosition() == 0) || (step > 0 && field->cursorPosition() == field->text().size())) {
+            switchTo(neighbourIndex(step));
+            return true;
+        }
+        return false;
+    }
+
     auto *menu = qobject_cast<QMenu *>(watched);
     if (!menu) {
         return false;
@@ -535,16 +582,12 @@ bool AtbAppMenuController::eventFilter(QObject *watched, QEvent *event)
     }
 
     if (event->type() == QEvent::KeyPress) {
-        const auto *keyEvent = static_cast<QKeyEvent *>(event);
-        const bool rightToLeft = m_proxyMenu->layoutDirection() == Qt::RightToLeft;
-        const int forwardKey = rightToLeft ? Qt::Key_Left : Qt::Key_Right;
-        const int backwardKey = rightToLeft ? Qt::Key_Right : Qt::Key_Left;
-
-        if (keyEvent->key() == backwardKey) {
+        const int step = switchStep(static_cast<QKeyEvent *>(event)->key());
+        if (step < 0) {
             switchTo(neighbourIndex(-1));
             return true;
         }
-        if (keyEvent->key() == forwardKey) {
+        if (step > 0) {
             if (QAction *active = m_proxyMenu->activeAction(); active && active->menu()) {
                 return false; // let QMenu open the submenu
             }

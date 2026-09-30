@@ -25,10 +25,12 @@ TapHandler {
         }
     }
     property bool longPressEventHandled: true
+    // Whether the widget lets clicks act on the window right now
+    property bool allowed: true
 
     signal invokeKWinShortcut(string shortcut)
 
-    enabled: cfg.widgetMouseAreaClickEnabled
+    enabled: cfg.widgetMouseAreaClickEnabled && allowed
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
     longPressThreshold: 0
     exclusiveSignals: TapHandler.SingleTap | TapHandler.DoubleTap

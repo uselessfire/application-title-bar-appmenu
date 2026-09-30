@@ -10,10 +10,16 @@ Item {
     id: handlers
     anchors.fill: parent
 
+    // Whether a press may start dragging the window
+    property bool dragEnabled: true
+    // Whether clicks and the wheel act on the window
+    property bool clicksEnabled: true
+
     signal invokeKWinShortcut(string shortcut)
 
     WidgetDragHandler {
         id: dragHandler
+        allowed: handlers.dragEnabled
         Component.onCompleted: {
             invokeKWinShortcut.connect(handlers.invokeKWinShortcut);
         }
@@ -22,6 +28,7 @@ Item {
 
     WidgetTapHandler {
         id: tapHandler
+        allowed: handlers.clicksEnabled
         Component.onCompleted: {
             invokeKWinShortcut.connect(handlers.invokeKWinShortcut);
         }
@@ -30,6 +37,7 @@ Item {
 
     WidgetWheelHandler {
         orientation: Qt.Vertical
+        allowed: handlers.clicksEnabled
         Component.onCompleted: {
             invokeKWinShortcut.connect(handlers.invokeKWinShortcut);
         }
@@ -37,6 +45,7 @@ Item {
 
     WidgetWheelHandler {
         orientation: Qt.Horizontal
+        allowed: handlers.clicksEnabled
         Component.onCompleted: {
             invokeKWinShortcut.connect(handlers.invokeKWinShortcut);
         }

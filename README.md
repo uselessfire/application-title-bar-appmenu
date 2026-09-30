@@ -28,10 +28,12 @@ element:
   menus that the application fills when they are opened.
 * In place of the title while the widget is hovered, or permanently next to the other elements.
 * Switching between menus by moving the pointer or with the arrow keys, like in a menu bar.
+* Menus open on click, so the window can still be dragged by the menu bar, like by the title.
 * Mnemonics: Alt+letter in the application opens its menu in the panel, and the letters are
   underlined while Alt is held.
 * The global shortcut of the widget opens its first menu.
-* A search entry for the actions of the menu (Wayland only, like in the Global Menu).
+* A search entry for the actions of the menu (Wayland only, like in the Global Menu). Once it
+  is open, typing goes to its field.
 * All panel edges. The menu is not shown on vertical panels.
 
 The widget also works without the compiled menu module, as plain Application Title Bar.
@@ -120,7 +122,8 @@ Add **Application Title Bar with App Menu** to a panel. In its settings, on the 
   always shown next to the title.
 * **Search**: *Add a search entry* to the menu (Wayland only).
 * **Fill free space on Panel**: the title takes the free space of the panel, up to its
-  *Maximum width*, and all of it reveals the menu.
+  *Maximum width*, and all of it reveals the menu. Remove flexible Spacers next to the widget:
+  Plasma gives the free space to them instead.
 
 ## Notes
 

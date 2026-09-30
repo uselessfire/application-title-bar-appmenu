@@ -2,7 +2,7 @@
 
 pkgname=plasma6-applets-application-title-bar-appmenu
 _repo=application-title-bar-appmenu
-pkgver=0.10.0.1
+pkgver=0.10.0.2
 pkgrel=1
 pkgdesc='Plasma 6 widget with the title, the buttons and the application menu of the active window'
 arch=(x86_64)

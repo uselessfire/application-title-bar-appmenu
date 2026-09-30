@@ -20,7 +20,7 @@
         "Id": "com.github.uselessfire.application-title-bar-appmenu",
         "Name": "Application Title Bar with App Menu",
         "License": "GPL-3.0+",
-        "Version": "0.10.0.1",
+        "Version": "0.10.0.2",
         "Website": "https://github.com/uselessfire/application-title-bar-appmenu",
         "FormFactors": [
             "desktop"

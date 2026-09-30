@@ -1,6 +1,6 @@
 pkgbase = plasma6-applets-application-title-bar-appmenu
 	pkgdesc = Plasma 6 widget with the title, the buttons and the application menu of the active window
-	pkgver = 0.10.0.1
+	pkgver = 0.10.0.2
 	pkgrel = 1
 	url = https://github.com/uselessfire/application-title-bar-appmenu
 	install = plasma6-applets-application-title-bar-appmenu.install
@@ -23,7 +23,7 @@ pkgbase = plasma6-applets-application-title-bar-appmenu
 	depends = qt6-declarative
 	optdepends = appmenu-gtk-module-wayland: menus of GTK 3 applications on Wayland (AUR)
 	optdepends = appmenu-gtk-module: menus of GTK 3 applications on X11
-	source = application-title-bar-appmenu-0.10.0.1.tar.gz::https://github.com/uselessfire/application-title-bar-appmenu/archive/refs/tags/v0.10.0.1.tar.gz
+	source = application-title-bar-appmenu-0.10.0.2.tar.gz::https://github.com/uselessfire/application-title-bar-appmenu/archive/refs/tags/v0.10.0.2.tar.gz
 	sha256sums = SKIP
 
 pkgname = plasma6-applets-application-title-bar-appmenu

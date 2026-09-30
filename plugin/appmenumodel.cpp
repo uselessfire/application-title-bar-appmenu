@@ -16,9 +16,12 @@
 #include <QAction>
 #include <QDBusConnection>
 #include <QDBusServiceWatcher>
+#include <QKeyEvent>
 #include <QLineEdit>
 #include <QMenu>
 #include <QWidgetAction>
+
+#include <algorithm>
 
 using AtbDBusMenu::DBusMenuImporter;
 
@@ -336,14 +339,8 @@ void AtbAppMenuModel::createSearch()
     searchField->setMinimumWidth(200);
     searchField->setContentsMargins(4, 4, 4, 4);
     connect(searchField, &QLineEdit::textChanged, this, &AtbAppMenuModel::updateSearchResults);
-    connect(searchField, &QLineEdit::returnPressed, this, [this] {
-        for (const auto &result : std::as_const(m_searchResults)) {
-            if (result) {
-                result->trigger();
-                return;
-            }
-        }
-    });
+    // Return, see eventFilter()
+    searchField->installEventFilter(this);
     searchWidgetAction->setDefaultWidget(searchField);
     m_searchField = searchField;
 
@@ -361,6 +358,36 @@ void AtbAppMenuModel::destroySearch()
     removeSearchResults();
     delete m_searchAction.data();
     m_searchMenu.reset();
+}
+
+bool AtbAppMenuModel::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched != m_searchField || event->type() != QEvent::KeyPress) {
+        return QAbstractListModel::eventFilter(watched, event);
+    }
+    const int key = static_cast<QKeyEvent *>(event)->key();
+    QMenu *menu = searchResultsMenu();
+    if ((key != Qt::Key_Return && key != Qt::Key_Enter) || !menu) {
+        return false;
+    }
+    // The field does not take Return, so the menu gets it and triggers its active entry:
+    // the result under the pointer, else the first result. Without results the active
+    // entry is the field itself, and the menu would just close.
+    const auto isResult = [this](QAction *action) {
+        return action && std::any_of(m_searchResults.cbegin(), m_searchResults.cend(), [action](const QPointer<QAction> &result) {
+                   return result == action;
+               });
+    };
+    if (isResult(menu->activeAction())) {
+        return false;
+    }
+    for (const auto &result : std::as_const(m_searchResults)) {
+        if (result && result->isEnabled()) {
+            menu->setActiveAction(result);
+            return false;
+        }
+    }
+    return true;
 }
 
 QMenu *AtbAppMenuModel::searchResultsMenu() const

@@ -168,6 +168,9 @@ private Q_SLOTS:
     void controllerKeepsStyleOffset();
     void controllerRestoresPanelHover();
     void controllerShowsSearchResults();
+    void controllerFocusesSearchField();
+    void controllerSwitchesFromSearchField();
+    void controllerTriggersSearchResultOnce();
     void controllerAdoptsEntriesAddedWhileOpen();
     void controllerSurvivesRebuildOfOpenEntry();
     void controllerClosesMenuEmptiedWhileOpen();
@@ -612,6 +615,168 @@ void AppMenuTest::controllerShowsSearchResults()
     QTRY_COMPARE(popup->geometry().bottom() + 1, panelTop);
 
     controller.closeMenu();
+}
+
+void AppMenuTest::controllerFocusesSearchField()
+{
+    AtbAppMenuModel model;
+    model.setSearchEnabled(true);
+    model.setMenu(m_exporter->service(), m_exporter->path());
+    QTRY_COMPARE(model.count(), 4);
+    QTRY_COMPARE(model.actionAt(1)->menu()->actions().size(), 1);
+
+    ButtonBar bar(4);
+    QVERIFY(QTest::qWaitForWindowExposed(&bar.window));
+
+    AtbAppMenuController controller;
+    controller.setModel(&model);
+    controller.setButtonGrid(bar.grid);
+
+    // Opened with a click: typing goes to the field, not to the keyboard navigation of the menu.
+    controller.trigger(bar.buttons.at(3), 3);
+    auto *popup = qobject_cast<QMenu *>(QApplication::activePopupWidget());
+    QVERIFY(popup);
+    auto *field = popup->findChild<QLineEdit *>();
+    QVERIFY(field);
+    QTRY_COMPARE(QApplication::focusWidget(), field);
+    QTest::keyClick(popup->windowHandle(), 'c');
+    QTest::keyClick(popup->windowHandle(), 'o');
+    QCOMPARE(field->text(), QStringLiteral("co"));
+    const auto shown = popup->actions();
+    QVERIFY(std::any_of(shown.cbegin(), shown.cend(), [](QAction *action) {
+        return action->text() == QStringLiteral("&Copy");
+    }));
+    field->clear();
+
+    // Reached by switching from another open menu: the same.
+    controller.switchTo(0);
+    QCOMPARE(controller.currentIndex(), 0);
+    controller.switchTo(3);
+    QCOMPARE(controller.currentIndex(), 3);
+    QTRY_COMPARE(QApplication::focusWidget(), field);
+
+    // Opened again, the last query is selected with its results: typing replaces it.
+    field->setText(QStringLiteral("co"));
+    controller.closeMenu();
+    controller.trigger(bar.buttons.at(3), 3);
+    popup = qobject_cast<QMenu *>(QApplication::activePopupWidget());
+    QVERIFY(popup);
+    QTRY_COMPARE(QApplication::focusWidget(), field);
+    QCOMPARE(field->selectedText(), QStringLiteral("co"));
+    QTest::keyClick(popup->windowHandle(), 'q');
+    QCOMPARE(field->text(), QStringLiteral("q"));
+
+    controller.closeMenu();
+}
+
+void AppMenuTest::controllerSwitchesFromSearchField()
+{
+    AtbAppMenuModel model;
+    model.setSearchEnabled(true);
+    model.setMenu(m_exporter->service(), m_exporter->path());
+    QTRY_COMPARE(model.count(), 4);
+    QTRY_COMPARE(model.actionAt(1)->menu()->actions().size(), 1);
+
+    ButtonBar bar(4);
+    QVERIFY(QTest::qWaitForWindowExposed(&bar.window));
+
+    AtbAppMenuController controller;
+    controller.setModel(&model);
+    controller.setButtonGrid(bar.grid);
+
+    controller.trigger(bar.buttons.at(3), 3);
+    auto *popup = qobject_cast<QMenu *>(QApplication::activePopupWidget());
+    QVERIFY(popup);
+    auto *field = popup->findChild<QLineEdit *>();
+    QVERIFY(field);
+    QTRY_COMPARE(QApplication::focusWidget(), field);
+
+    // In the empty field, the arrow keys switch menus like everywhere else: Left skips
+    // the entry without a submenu, and Right comes back to the search entry.
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Left);
+    QCOMPARE(controller.currentIndex(), 1);
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Right);
+    QCOMPARE(controller.currentIndex(), 3);
+    QTRY_COMPARE(QApplication::focusWidget(), field);
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Right);
+    QCOMPARE(controller.currentIndex(), 0);
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Left);
+    QCOMPARE(controller.currentIndex(), 3);
+
+    // Within the text they move the cursor, at its ends they switch menus.
+    QTest::keyClick(popup->windowHandle(), 'c');
+    QTest::keyClick(popup->windowHandle(), 'o');
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Left);
+    QCOMPARE(controller.currentIndex(), 3);
+    QCOMPARE(field->cursorPosition(), 1);
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Left);
+    QCOMPARE(controller.currentIndex(), 3);
+    QCOMPARE(field->cursorPosition(), 0);
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Left);
+    QCOMPARE(controller.currentIndex(), 1);
+
+    controller.closeMenu();
+}
+
+void AppMenuTest::controllerTriggersSearchResultOnce()
+{
+    AtbAppMenuModel model;
+    model.setSearchEnabled(true);
+    model.setMenu(m_exporter->service(), m_exporter->path());
+    QTRY_COMPARE(model.count(), 4);
+    QTRY_COMPARE(model.actionAt(1)->menu()->actions().size(), 1);
+
+    ButtonBar bar(4);
+    QVERIFY(QTest::qWaitForWindowExposed(&bar.window));
+
+    AtbAppMenuController controller;
+    controller.setModel(&model);
+    controller.setButtonGrid(bar.grid);
+
+    const auto clicks = [this](int id) {
+        return std::count(m_exporter->events.cbegin(), m_exporter->events.cend(), qMakePair(id, QStringLiteral("clicked")));
+    };
+    const auto openSearch = [&]() -> QMenu * {
+        controller.trigger(bar.buttons.at(3), 3);
+        return qobject_cast<QMenu *>(QApplication::activePopupWidget());
+    };
+
+    // Without results, Return does nothing and the menu stays open.
+    QMenu *popup = openSearch();
+    QVERIFY(popup);
+    auto *field = popup->findChild<QLineEdit *>();
+    QVERIFY(field);
+    QTRY_COMPARE(QApplication::focusWidget(), field);
+    QTest::keyClick(popup->windowHandle(), 'x');
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Return);
+    QVERIFY(popup->isVisible());
+    QCOMPARE(controller.currentIndex(), 3);
+
+    // Otherwise it triggers the first result, once.
+    field->setText(QStringLiteral("o"));
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Return);
+    QTRY_VERIFY(!popup->isVisible());
+    QTRY_COMPARE(clicks(11), 1); // Open
+    QTest::qWait(100);
+    QCOMPARE(clicks(11) + clicks(21), 1);
+
+    // Or the result under the pointer, once as well.
+    popup = openSearch();
+    QVERIFY(popup);
+    QTRY_COMPARE(QApplication::focusWidget(), field);
+    field->setText(QStringLiteral("co"));
+    const auto shown = popup->actions();
+    const auto copy = std::find_if(shown.cbegin(), shown.cend(), [](QAction *action) {
+        return action->text() == QStringLiteral("&Copy");
+    });
+    QVERIFY(copy != shown.cend());
+    popup->setActiveAction(*copy);
+    QTest::keyClick(popup->windowHandle(), Qt::Key_Return);
+    QTRY_VERIFY(!popup->isVisible());
+    QTRY_COMPARE(clicks(21), 1);
+    QTest::qWait(100);
+    QCOMPARE(clicks(21), 1);
+    QCOMPARE(clicks(11), 1);
 }
 
 void AppMenuTest::controllerAdoptsEntriesAddedWhileOpen()

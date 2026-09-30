@@ -13,6 +13,8 @@ import org.kde.plasma.plasmoid
 PointHandler {
     property bool dragInProgress: false
     property var cfg: plasmoid.configuration
+    // Whether the widget lets a press drag the window right now
+    property bool allowed: true
 
     signal invokeKWinShortcut(string shortcut)
 
@@ -26,7 +28,7 @@ PointHandler {
         dragInProgress = false;
     }
 
-    enabled: cfg.windowTitleDragEnabled
+    enabled: cfg.windowTitleDragEnabled && allowed
     dragThreshold: cfg.windowTitleDragThreshold
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
     onActiveChanged: function () {
